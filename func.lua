@@ -11,12 +11,13 @@ OPTIONS = {
   notes = {[0]=true, false, false, false, true, false, false, false, true, false, false, false},
   name = "Recorded Hardware",
   hardware_name = "",
-  background = false,
-  post_record_normalize_and_trim = false,
-  add_adsr = false,
+  background = true,
+  post_record_normalize_and_trim = true,
   mapping = 2,
   layers = 1,
-  between_time = 100
+  between_time = 100,
+  add_adsr = true,
+  trigger_as_one_shot = false
 }
 
 TAGS = {[0]="Bass", "Drum", "FX", "Keys", "Lead", "Pad", "Strings",  "Vocal"}
