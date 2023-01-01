@@ -1,53 +1,20 @@
-require"util"
-require"midi"
-
--- global options box
-OPTIONS = {
-  low = 1,
-  high = 6,
-  length = 2,
-  release = .2,
-  tags = {[0]=false, false, false, false, false, false, false, false},
-  notes = {[0]=true, false, false, false, true, false, false, false, true, false, false, false},
-  name = "Recorded Hardware",
-  hardware_name = "",
-  background = false,
-  post_record_normalize_and_trim = false,
-  mapping = 2,
-  layers = 1,
-  rrobin = 1,
-  between_time = 100
-}
-
-TAGS = {[0]="Bass", "Drum", "FX", "Keys", "Lead", "Pad", "Strings",  "Vocal"}
-NOTES = {[0]="C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
-
--- note/tag button colors
-C_PRESSED = {100, 200, 100}
-C_NOT_PRESSED = {20, 20, 20}
-
--- state
-STATE = {
-  midi_device = nil, -- current midi device name
-  dev = nil,         -- current midi device object
-  recording = false, -- are we actively recording
-  notes = nil,       -- list of notes to send to the midi device
-  notei = nil,       -- current index in note list
-  layers = nil,      -- number of velocity layers for each note
-  layeri = nil,      -- current layer
-  rrobin = nil,      -- number of round robin layers for each note
-  rrobini = nil,     -- current round robin layer
-  total = nil,       -- total amount of notes that will be sampled
-  inst = nil,        -- instrument to which samples will be saved
-  inst_index = nil   -- instrument index
-}
+--[[ NOT WORKING
+function toggle_start_stop_active_states(status)
+  if status == 0 then
+    vb.views["big_button_start"].active = true
+    vb.views["big_button_stop"].active = false 
+  else
+    vb.views["big_button_start"].active = false
+    vb.views["big_button_stop"].active = true  
+  end
+end
+--]]
 
 -- reset state to be ready to record
 function reset_state()
   STATE.notei = nil
   STATE.notes = nil
-  STATE.dev = nil
-  STATE.recording = false
+  STATE.recording.value = false
   STATE.layers = nil
   STATE.layeri = nil
   STATE.rrobin = nil
@@ -55,7 +22,8 @@ function reset_state()
   STATE.total = nil
   STATE.inst = nil
   STATE.inst_index = nil
-  
+  STATE.status.value = 0
+      
   TOCALL = nil -- from util.lua
   KILL = false -- from util.lua
 
@@ -68,6 +36,16 @@ function reset_state()
     renoise.tool():remove_timer(stop_note)
   end
 end
+
+function reset_midi_device_state()
+  local index = 1
+  local device_name = renoise.Midi.available_output_devices()[index]
+
+  STATE.dev = device_name
+  STATE.midi_device = nil
+  STATE.midi_device_index = index
+end
+renoise.Midi.devices_changed_observable(reset_midi_device_state())
 
 -- toggles the on/off state of a button
 function toggle_button(button, ttype)
@@ -86,12 +64,17 @@ function gen_notes()
   -- midi 0xc = c0
   -- renoise 0 = c0
   local ret = {}
-  local step = 4
-  for n=12*OPTIONS.low,12*(OPTIONS.high + 1)-1 do
+  local step = 4  
+  local low = prefs:read('low_octave',1)
+  local high= prefs:read('high_octave',6) + 1
+  
+  for n = 12 * low, 12 * (high) - 1 do
+    --@TODO replace OPTIONs with prefs
     if OPTIONS.notes[n%12] then
       table.insert(ret, n)
     end
-  end
+  end  
+  
   return ret
 end
 
@@ -126,6 +109,12 @@ function go()
     stop()
     return false
   end
+  
+  -- create a new instrument and name it
+  local total_insts = #renoise.song().instruments
+  local new_inst_index = total_insts + 1
+  local new_inst = renoise.song():insert_instrument_at(new_inst_index)
+  renoise.song().selected_instrument_index = new_inst_index
 
   STATE.notes = gen_notes()
   STATE.notei = 1
@@ -137,8 +126,11 @@ function go()
   STATE.total = table.count(STATE.notes) * STATE.layers * STATE.rrobin
   STATE.inst = renoise.song().selected_instrument
   STATE.inst_index = renoise.song().selected_instrument_index
+  STATE.status.value = 1
   
   print("Going to create "..tostring(STATE.total).." samples.")
+  print("start should be disabled. stop sholuld eb enabled")
+  print("STATE status = ", STATE.status.value)
 
   -- get inst
   local inst = STATE.inst
@@ -262,9 +254,6 @@ function finish()
 
   local lunit = 128/STATE.layers
 
-  -- name instrument
-  update_instrument_name()
-
   -- name samples
   for i=1,table.count(STATE.notes) do
     for l=1,STATE.layers do
@@ -275,6 +264,9 @@ function finish()
       end
     end
   end
+  
+  -- update instrument name
+  update_instrument_name()
 
   -- do mappings
   do_mapping(get_mapping_dict())
@@ -294,7 +286,41 @@ function finish()
   if OPTIONS.post_record_normalize_and_trim then
     normalize_and_trim()
   end
+  
+  if OPTIONS.create_x_fade_loop then
+    create_x_fade_loops()
+  end
+  
+  if prefs:read("save_wav_files", false) then
+    if isempty(vb.views["wav_output_path"].text) then
+      local wav_path = renoise.app():prompt_for_path("Save wav files in...")
+      vb.views["wav_output_path"].text = wav_path
+      prefs:write("wav_output_path", wav_path)
+    end
+  
+    -- save wav files
+    -- save_inst_files(vb.views["wav_output_path"].text, inst_name)  
+  end
+  
+  -- save instrument
+  if OPTIONS.save_instrument then
+    if isempty(vb.views["xrni_output_path"].text) then
+      local xrni_path = renoise.app():prompt_for_path("Save xrni file in...")
+      vb.views["xrni_output_path"].text = xrni_path
+      prefs:write("xrni_output_path", xrni_path)
+    end
+    
+    local inst_name = renoise.song().selected_instrument.name
+    renoise.app():save_instrument(vb.views["xrni_output_path"].text.."/"..inst_name)    
+  end
+  
+  STATE.status.value = 0
 end
+
+function create_x_fade_loops()
+
+end
+
 
 function normalize_and_trim_coroutine()
   -- call processing coroutines serially
@@ -316,18 +342,21 @@ end
 -- kill switch
 function stop()
   KILL = true
-  if STATE.recording then
+  if STATE.recording.value then
     renoise.app().window.sample_record_dialog_is_visible = true
     renoise.song().transport:start_stop_sample_recording()
-    STATE.recording = false
-    STATE.dev:send({NOTE_OFF, STATE.notes[STATE.notei] + 0xC, 0x40}) -- release current note
-    STATE.dev:send({ALL_NOTE_OFF_1 , ALL_NOTE_OFF_2, 0x00}) -- send all notes off
+    STATE.recording.value = false
+    if STATE.dev and STATE.dev.is_open then
+      STATE.dev:send({NOTE_OFF, STATE.notes[STATE.notei] + 0xC, 0x40}) -- release current note
+      STATE.dev:send({ALL_NOTE_OFF_1 , ALL_NOTE_OFF_2, 0x00}) -- send all notes off
+    end
   end
   renoise.app().window.sample_record_dialog_is_visible = false
   if STATE.dev and STATE.dev.is_open then
     STATE.dev:close()
   end
   update_status("Stopped")
+  STATE.status.value = 0
 end
 
 -- open the recording settings window
@@ -357,8 +386,39 @@ function prep_note()
   renoise.song().selected_sample_index = idx
   renoise.app().window.sample_record_dialog_is_visible = true
   renoise.song().transport:start_stop_sample_recording()
-  STATE.recording = true
+  STATE.recording.value = true
   call_in(start_note, 50)
+end
+
+function all_notes_off()
+  local devices = renoise.Midi.available_output_devices()
+  local dev = renoise.Midi.create_output_device(devices[2])
+  dev:send({0xB0, 0x7B, 0x00})
+end
+
+function preview_note()
+  all_notes_off()
+  
+  local dev = get_midi_device()
+  if dev then
+    local midi_channel  = tonumber(prefs:read('current_midi_channel', 1))  
+    local status_byte   = tonumber(string.format("0x%x", bit.bor(0x90, midi_channel)))
+    local note          = tonumber(string.format("0x%x", 60))
+    local velocity      = tonumber(string.format("0x%x", 120))  
+  
+    vb.views['preview_program_button'].active = false
+    vb.views['single_midi_program'].active = false
+    
+    dev:send({status_byte, note, velocity})
+    
+    -- kill all notes in .5 seconds
+    call_in(function()
+      all_notes_off()
+      vb.views['preview_program_button'].active = true 
+      vb.views['single_midi_program'].active = true
+    end, 500)
+  end
+
 end
 
 -- play the note
@@ -385,7 +445,7 @@ function stop_note()
   print("Stopping note...")
   renoise.app().window.sample_record_dialog_is_visible = true
   renoise.song().transport:start_stop_sample_recording()
-  STATE.recording = false
+  STATE.recording.value = false
 
   STATE.rrobini = STATE.rrobini + 1
   if STATE.rrobini > STATE.rrobin then

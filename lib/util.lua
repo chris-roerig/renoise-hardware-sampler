@@ -32,3 +32,46 @@ end
 function upcase(word)
   return string.gsub(" "..word, "%W%l", string.upper):sub(2)
 end
+
+-- splits string to table
+-- thanks https://stackoverflow.com/a/7615129
+function strsplit (inputstr, sep)
+  if sep == nil then
+    sep = "%s"
+  end
+  local t={}
+  for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+    table.insert(t, str)
+  end
+  return t
+end
+
+-- check if string is empty string or nil
+function isempty(s)
+  return s == nil or s == ''
+end
+
+function isnan(n)
+ return n ~= n
+end
+
+function isnanorempty(s)
+  return isempty(s) or isnan(s)
+end
+
+function range(start, finish, as_string )
+  as_string = as_string or false
+  
+  local range = {}
+  for i = start, finish do
+    if as_string then
+      local s = string.format("%s", i)
+      table.insert(range, i, s)
+    else
+      table.insert(range, i, i)
+    end
+  end
+
+  return range
+end
+

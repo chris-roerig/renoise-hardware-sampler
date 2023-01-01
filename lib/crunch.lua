@@ -1,7 +1,5 @@
 -- intensive processing and coroutine stuff
 
-require"process_slicer"
-
 function prep_processing(func)
   if SAMPLE_PROCESSING_PROCESS and SAMPLE_PROCESSING_PROCESS:running() then
     SAMPLE_PROCESSING_PROCESS:stop()
@@ -18,14 +16,14 @@ function coroutine_status(s, nowheel)
   local wheel = {[0]="/", "-", "\\", "|"}
   if s then
     if not nowheel then
-      vb.views.processing_status_text.text = wheel[WHEELI].." "..s
+      status_text(wheel[WHEELI].." "..s)
     else
-      vb.views.processing_status_text.text = s
+      status_text(s)
     end
   else
     -- just update the wheel
     local oldtext = vb.views.processing_status_text.text
-    vb.views.processing_status_text.text = wheel[WHEELI].." "..string.sub(oldtext, 3)
+    status_text(wheel[WHEELI].." "..string.sub(oldtext, 3))
   end
   
   -- check that the window is still open
