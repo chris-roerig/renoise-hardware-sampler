@@ -91,7 +91,6 @@ function debug_stat(name, value)
 end
 
 function toggle_buttons(state)
-  print("TOGGLE STATE", state)
   -- no activity
   if state == 0 then
     vb.views['big_button_stop'].active = false

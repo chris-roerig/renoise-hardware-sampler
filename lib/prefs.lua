@@ -17,6 +17,7 @@ Prefs = {}
       high_octave     = 6,
       num_vel_layers  = 1,
       num_rr_layers   = 1,
+      length          = 1,
       
       -- paths
       xrni_output_path  = "",
@@ -27,6 +28,7 @@ Prefs = {}
       save_renoise_instrument   = false,
       auto_preview_enabled      = false,
       use_tag_envelope_settings = false,
+      post_record_normalize_and_trim = true,
     }
     
     renoise.tool().preferences = self.options

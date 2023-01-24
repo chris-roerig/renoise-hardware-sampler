@@ -14,6 +14,7 @@ function panel_selector()
           notifier = function(x)
             if x == 1 then
               -- Single Program
+              STATE.program_type.value = 1
               vb.views['panel_single_program'].visible = true
               vb.views['panel_multi_program'].visible = false
               vb.views['panel_post_processing'].visible = false
@@ -23,6 +24,7 @@ function panel_selector()
               vb.views['gui_big_buttons'].visible = true
             elseif x == 2 then
               -- Multi-Program
+              STATE.program_type.value = 2
               vb.views['panel_single_program'].visible = false
               vb.views['panel_multi_program'].visible = true
               vb.views['panel_post_processing'].visible = false

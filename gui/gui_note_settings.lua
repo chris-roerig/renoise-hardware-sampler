@@ -23,6 +23,7 @@ function gui_note_settings()
                   prefs:read("low_octave", 1), 0, 9, {1, 2}, 
                   function(x)
                     OPTIONS.low = x
+                    update_total_sample_time_display()
                     prefs:write("low_octave", x)
                   end, 
                   tostring, math.floor),
@@ -30,6 +31,7 @@ function gui_note_settings()
                   prefs:read("high_octave", 6), 0, 9, {1, 2}, 
                   function(x) 
                     OPTIONS.high = x 
+                    update_total_sample_time_display()
                     prefs:write("high_octave", x)
                   end, 
                   tostring, math.floor),
@@ -37,6 +39,7 @@ function gui_note_settings()
                   prefs:read("num_vel_layers", 1), 1, 32, {1, 2}, 
                   function(x) 
                     OPTIONS.layers = x 
+                    update_total_sample_time_display()
                     prefs:write("num_vel_layers", x)
                   end,
                   tostring, math.floor),
@@ -44,6 +47,7 @@ function gui_note_settings()
                   prefs:read("num_rr_layers", 1), 1, 32, {1, 2}, 
                   function(x) 
                     OPTIONS.rrobin = x 
+                    update_total_sample_time_display()
                     prefs:write("num_rr_layers", x)
                   end, 
                   tostring, math.floor)
@@ -78,9 +82,11 @@ function gui_note_settings()
         spacing = DEFAULT_MARGIN,
   
         value_box("Hold time", "How long the note on signal will be held.", 
-          OPTIONS.length, 0.1, 60, {0.1, 1}, 
+          prefs:read('length', 1), 0.1, 60, {0.1, 1}, 
           function(x)
             OPTIONS.length = x
+            prefs:write('length',x)
+            update_total_sample_time_display()
           end, 
           function(x)
             return tostring(x).." s."
@@ -90,6 +96,7 @@ function gui_note_settings()
           OPTIONS.release, 0.1, 60, {0.1, 1}, 
           function (x)
             OPTIONS.release = x
+            update_total_sample_time_display()
           end,
           function(x) 
             return tostring(x).." s."
@@ -99,11 +106,60 @@ function gui_note_settings()
           OPTIONS.between_time, 10, 1000, {10, 100}, 
           function (x)
             OPTIONS.between_time = x
+            update_total_sample_time_display()
           end,
           function(x)
             return tostring(x).." ms."
           end, 
           tonumber)
+      },
+      
+      vb:horizontal_aligner {
+        mode = "center",
+        spacing = DEFAULT_MARGIN,
+        vb:text {
+          id = "total_sample_time",
+          text = "Hello"
+        }
       }
     }
+end
+
+function update_total_sample_time_display()
+  local total = 0
+  local low = OPTIONS.low
+  local high = OPTIONS.high
+  local layers = OPTIONS.layers
+  local robin = OPTIONS.robin
+  local length =  OPTIONS.length
+  local release = OPTIONS.release
+  local between = OPTIONS.between_time
+  
+  -- the total number of notes set to true
+  local on_notes = 0
+  for i, v in ipairs(OPTIONS.notes) do
+    if v == true then
+      on_notes = on_notes + 1
+    end
+  end
+  
+  local single_octave = 0
+  
+  -- for a single octave
+  single_octave = ((length + release) * on_notes)
+  
+  if high == low then
+    total = single_octave
+  else
+    total = (high - low) * single_octave
+  end
+  
+  if total > 60 then
+    total = "~" .. tostring(total / 60) .. " minutes"
+  else
+    total = tostring(total) .. " seconds"
+  end
+  
+  
+  vb.views['total_sample_time'].text = total
 end

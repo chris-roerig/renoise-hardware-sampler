@@ -25,14 +25,15 @@ function panel_single_program()
         width = "25%"
       },
       vb:valuebox {
-        min = 0,
-        max = 255,
+        min = 1,
+        max = 128,
         id = "single_midi_program",
         value = prefs:read("single_midi_program", 1),
         notifier = function(x)    
-          OPTIONS.single_midi_program = x
+          MSTATE.current_program = x
           prefs:write("single_midi_program", x)
-          select_midi_program(prefs:read('current_midi_channel', 0), x)
+          
+          select_program(x - 1)
 
           if prefs:read('auto_preview_enabled', false) == true then
             preview_note()

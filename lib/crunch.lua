@@ -65,6 +65,13 @@ function update_instrument_name()
   renoise.song().selected_instrument.name = complete_name
 end
 
+function name_by_program_number()
+  -- hardware name
+  -- program number
+  local name = hardware_name .. "_" .. tostring(program_number)
+  vb.views.instrument_name_textfield.text = name
+end
+
 -- generate random instrument names
 function autoname()
   -- the random words list

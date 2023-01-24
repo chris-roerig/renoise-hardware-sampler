@@ -27,12 +27,6 @@ require("gui/panel_options")
 require("gui/panel_post_processing")
 require("gui/panel_selector")
 require("gui/panel_single_program")
-require("gui/panel_debug_log")
-require("gui/panel_debug_state")
-require("gui/panel_debug_options")
-require("gui/panel_debug_other")
-require("gui/panel_debug_prefs")
-require("gui/panel_debug_selector")
 require("gui")
 
 -- @TODO: refactor all from prefs to PREFS to keep with global convention
@@ -60,13 +54,21 @@ renoise.tool():add_keybinding {
 renoise.tool().tool_finished_loading_observable:add_notifier(function(x)
   print(TOOL_FULLNAME.." has loaded. That was good work.")
 
+  STATE.current_midi_channel = prefs:read('current_midi_channel', 1)
 end)
 
 -- use this for any initization that require the gui (the vb global) be fully availble
 gui_finished_loading = renoise.Document.ObservableBang()
 gui_finished_loading:add_notifier(function(x)
   print("GUI HAS FINISHED LOADING!")
+  print('first_midi_program:', vb.views['first_midi_program'].value)
+  print('last_midi_program:', vb.views['last_midi_program'].value)
+  
+  MSTATE.current_program, STATE.start_program = vb.views['first_midi_program'].value
+  MSTATE.end_program = vb.views['last_midi_program'].value
+  
   STATE.gui_loaded = true
+  STATE.status.value = 0
 end)
 
 

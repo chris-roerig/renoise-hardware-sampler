@@ -27,13 +27,11 @@ OPTIONS = {
   name = "Recorded Hardware",
   hardware_name = "",
   background = false,
-  post_record_normalize_and_trim = false,
   mapping = 2,
   layers = 1,
   rrobin = 1,
   between_time = 100,
   create_x_fade_loop = false,
-  multi_program = false,
   first_midi_program = 1,
   last_midi_program = 1,
   single_midi_program = 1
@@ -43,7 +41,7 @@ OPTIONS = {
 STATE = renoise.Document.create("StateDocument"){
   midi_device = nil,    -- current midi device name
   dev = nil,            -- current midi device object
-  midi_device_index = 1,-- current midi device selected in options list
+  --midi_device_index = 1,-- current midi device selected in options list
   recording = false,    -- are we actively recording
   notes = nil,          -- list of notes to send to the midi device
   notei = nil,          -- current index in note list
@@ -55,32 +53,47 @@ STATE = renoise.Document.create("StateDocument"){
   inst = nil,           -- instrument to which samples will be saved
   inst_index = nil,     -- instrument index
   program_type = 1,     -- 1 means single program. Anything greater means multi-program
-  current_program = 0,
+  current_midi_program = 0,
+  first_midi_program = 0,
+  last_midi_program = 0,
   gui_loaded = false
 }
 -- 0 means there's no job running. 1 means there is.
 STATE.status = renoise.Document.ObservableNumber()
-STATE.status.value = 0
--- add notifier callbacks
+
+-- MIDI State
+MSTATE = {
+  channel = 1,
+  current_program = 0,
+  start_program = 0,
+  end_program = 0
+}
+
 STATE.status:add_notifier(function(x)
-  print("STATE.status.value =", STATE.status.value)
-  print("YOU'VE BEEN NOTIFIED!", STATE.status.value)
-  
   toggle_buttons(STATE.status.value)
- 
-  -- nothing to do if this is a single program
-  if STATE.program_type.value < 2 then
-    return
-  end
   
-  if STATE.status.value == 0 then
-    print("Current program: ", STATE.current_program.value)
-    if STATE.current_program.value ~= OPTIONS.last_midi_program then
-      print("doing next program")
-      select_midi_program("1", STATE.current_program.value)
-      autoname()
-      call_in(go, 500)
-      STATE.current_program.value = STATE.current_program.value + 1
+  if STATE.status.value == 1 then
+    status_text("job has started")
+  elseif STATE.status.value == 0 then
+    status_text("job has stopped")
+    -- the job was killed. just quit now
+    if KILL == true then
+      return
+    end
+    
+    renoise.song().selected_instrument.name = vb.views['hardware_name_textfield_multi'].text .. "_" .. tostring(MSTATE.current_program)
+    
+    if STATE.program_type.value == 2 and MSTATE.current_program < MSTATE.end_program then
+      status_text("There are more jobs to do")
+      status_text("Just did program: ", MSTATE.current_program)
+      MSTATE.current_program = MSTATE.current_program + 1
+      select_program(MSTATE.current_program)
+      status_text("Now doing program: ", MSTATE.current_program)
+      
+      set_no_release_time()
+      -- autoname()
+      
+      call_in(go, 1000)
     end
   end
 end)

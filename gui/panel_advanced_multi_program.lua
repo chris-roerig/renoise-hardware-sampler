@@ -29,7 +29,7 @@
             vb.views["from_file_options"].visible = false
             
             vb.views["multi_panel_options"].visible = false
-            OPTIONS.multi_program = false
+            STATE.multi_program = false
           else
             vb.views["auto_name_options"].visible = false
             vb.views["name_instrument_name"].visible = false
@@ -38,7 +38,7 @@
             vb.views["from_file_options"].visible = true
             
             vb.views["multi_panel_options"].visible = true
-            OPTIONS.multi_program = true
+            STATE.multi_program = true
           end
         end
       }
@@ -75,7 +75,7 @@ function advanced_gui()
         },
         vb:textfield {
           id = "multi_program_file",
-          notifier =  function(x) update_instrument_name() end,
+          notifier =  update_instrument_name,
           width = "50%",
           tooltip = "Append the hardware device's name to further identify."
         },

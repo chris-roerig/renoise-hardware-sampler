@@ -1,0 +1,20 @@
+v2.0.0
+
+Fixed
+* Tool would crash if previously saved MIDI device was no longer available
+
+New
+* Added multi-program sampling feature
+* Added program preview and auto-preview feature
+* Note settings are now saved as preferences
+* Basic envelop settings can be infered from tags
+* WAV files can be automatically saved to desired path
+* Instrument file can be automatically saved to desired path
+* Added ability to open tool from the Renoise Tool menu
+* Added key binding ability so tool can be opened via hot-keys
+
+Changed
+* GUI overhaul to make future features easier to implement
+* A lot of backend code has been moved or refactored to help speed up contributor on-boarding
+* Making the progress bar more visible and used to display more information
+* The Start and Stop shuttle button states are toggled based on current activity

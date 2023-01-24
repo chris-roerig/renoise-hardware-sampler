@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <HWSamplerPreferences doc_version="0">
-  <low_octave>6</low_octave>
+  <low_octave>2</low_octave>
   <high_octave>6</high_octave>
-  <first_midi_program>44</first_midi_program>
   <use_tag_envelope_settings>true</use_tag_envelope_settings>
-  <save_renoise_instrument>true</save_renoise_instrument>
-  <auto_preview_enabled>false</auto_preview_enabled>
-  <xrni_output_path>C:\Users\chris\Desktop\desktop icons\</xrni_output_path>
-  <last_midi_program>74</last_midi_program>
-  <wav_output_path>C:\Users\chris\Desktop\</wav_output_path>
-  <midi_device_name/>
+  <post_record_normalize_and_trim>false</post_record_normalize_and_trim>
+  <last_midi_program>128</last_midi_program>
+  <midi_device_name>USB Midi</midi_device_name>
   <num_rr_layers>1.0</num_rr_layers>
-  <current_midi_channel>0.0</current_midi_channel>
-  <num_vel_layers>1.0</num_vel_layers>
-  <single_midi_program>42</single_midi_program>
+  <current_midi_channel>1.0</current_midi_channel>
+  <length>2</length>
   <save_wav_files>true</save_wav_files>
+  <first_midi_program>1.0</first_midi_program>
+  <auto_preview_enabled>false</auto_preview_enabled>
+  <save_renoise_instrument>true</save_renoise_instrument>
+  <wav_output_path>C:\Users\chris\Desktop\Dreadbox Typhon\wav\</wav_output_path>
+  <num_vel_layers>1.0</num_vel_layers>
+  <single_midi_program>1.0</single_midi_program>
+  <xrni_output_path>C:\Users\chris\Desktop\Dreadbox Typhon\xrni\</xrni_output_path>
 </HWSamplerPreferences>

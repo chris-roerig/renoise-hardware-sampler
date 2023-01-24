@@ -1,14 +1,3 @@
---[[ NOT WORKING
-function toggle_start_stop_active_states(status)
-  if status == 0 then
-    vb.views["big_button_start"].active = true
-    vb.views["big_button_stop"].active = false 
-  else
-    vb.views["big_button_start"].active = false
-    vb.views["big_button_stop"].active = true  
-  end
-end
---]]
 
 -- reset state to be ready to record
 function reset_state()
@@ -118,7 +107,7 @@ function go()
 
   STATE.notes = gen_notes()
   STATE.notei = 1
-  STATE.dev = get_midi_dev()
+  STATE.dev = get_midi_device()
   STATE.layers = math.floor(OPTIONS.layers)
   STATE.layeri = 1
   STATE.rrobin = math.floor(OPTIONS.rrobin)
@@ -147,6 +136,9 @@ function go()
 
   -- start on first sample
   renoise.song().selected_sample_index = 1
+  
+  -- select the appropriate midi program
+  select_program(MSTATE.current_program)
 
   -- go!
   prep_note()
@@ -281,15 +273,19 @@ function finish()
 
   -- close midi
   STATE.dev:close()
+  
+  index()
 
   -- normalize samples if enabled
-  if OPTIONS.post_record_normalize_and_trim then
+  if prefs:read('post_record_normalize_and_trim', false) == true then
     normalize_and_trim()
   end
   
   if OPTIONS.create_x_fade_loop then
     create_x_fade_loops()
   end
+  
+ local inst_name = renoise.song().selected_instrument.name
   
   if prefs:read("save_wav_files", false) then
     if isempty(vb.views["wav_output_path"].text) then
@@ -299,7 +295,7 @@ function finish()
     end
   
     -- save wav files
-    -- save_inst_files(vb.views["wav_output_path"].text, inst_name)  
+    save_inst_files(vb.views["wav_output_path"].text, inst_name)  
   end
   
   -- save instrument
@@ -310,7 +306,6 @@ function finish()
       prefs:write("xrni_output_path", xrni_path)
     end
     
-    local inst_name = renoise.song().selected_instrument.name
     renoise.app():save_instrument(vb.views["xrni_output_path"].text.."/"..inst_name)    
   end
   
@@ -321,6 +316,45 @@ function create_x_fade_loops()
 
 end
 
+function save_inst_files(path, name)
+  if isempty(name) then
+    return
+  end
+
+  local samples = renoise.song().selected_instrument.samples
+  
+  -- nothing to do if there's no samples 
+  if #samples == 0 or name == "" then
+    return
+  end
+  
+  os.mkdir(path.."/"..name)
+  
+  for key, sample in pairs(samples) do
+    renoise.song().selected_sample_index = key
+    renoise.app():save_instrument_sample(path.."/"..name.."/"..sample.name)
+  end
+end
+
+function index()
+  local samples = renoise.song().selected_instrument.samples
+  
+  -- nothing to do if there's no samples 
+  if #samples == 0 then
+    return
+  end
+  
+  local i = 1
+  local old_name, new_name = ""
+  
+  for key, value in pairs(samples) do
+    old_name = value.name
+    new_name = i.."_"..old_name
+    value.name = new_name
+
+    i = i + 1
+  end
+end
 
 function normalize_and_trim_coroutine()
   -- call processing coroutines serially
@@ -387,7 +421,8 @@ function prep_note()
   renoise.app().window.sample_record_dialog_is_visible = true
   renoise.song().transport:start_stop_sample_recording()
   STATE.recording.value = true
-  call_in(start_note, 50)
+  select_program(MSTATE.current_program)
+  call_in(start_note, 250)
 end
 
 function all_notes_off()
@@ -401,18 +436,23 @@ function preview_note()
   
   local dev = get_midi_device()
   if dev then
-    local midi_channel  = tonumber(prefs:read('current_midi_channel', 1))  
+    local midi_channel  = tonumber(prefs:read('current_midi_channel', 1) - 1)  
     local status_byte   = tonumber(string.format("0x%x", bit.bor(0x90, midi_channel)))
     local note          = tonumber(string.format("0x%x", 60))
     local velocity      = tonumber(string.format("0x%x", 120))  
   
+    print("midi_channel", midi_channel)
+    print("dev name: ", dev.name)
+  
     vb.views['preview_program_button'].active = false
     vb.views['single_midi_program'].active = false
     
-    dev:send({status_byte, note, velocity})
+    local a = dev:send({status_byte, note, velocity})
+    print(a)
     
     -- kill all notes in .5 seconds
     call_in(function()
+      print("asdfasd")
       all_notes_off()
       vb.views['preview_program_button'].active = true 
       vb.views['single_midi_program'].active = true
@@ -430,7 +470,7 @@ function start_note()
   local vel = math.floor((STATE.layeri)*lunit - 1)
   
   STATE.dev:send({NOTE_ON, STATE.notes[STATE.notei] + 0xC, vel})
-  call_in(release_note, OPTIONS.length * 1000)
+  call_in(release_note, prefs:read('length') * 1000)
 end
 
 -- release the note

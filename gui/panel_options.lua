@@ -95,8 +95,10 @@ function panel_options()
           spacing = UNIT/3,
   
           vb:checkbox {
-            value = OPTIONS.post_record_normalize_and_trim,
-            notifier = function(x) OPTIONS.post_record_normalize_and_trim = x end,
+            value = prefs:read('post_record_normalize_and_trim', false),
+            notifier = function(x) 
+              prefs:write('post_record_normalize_and_trim', x)
+            end,
             tooltip = "If checked, all samples will be normalized and trimmed after recording has completed."
           },
   
@@ -131,7 +133,7 @@ end
 
 function midi_list()
   local devices, selected_idx = midi_device_list()
-  local selected = get_midi_device()
+  local selected, selected_name, selected_idx = get_midi_device()
   
   return vb:horizontal_aligner {
     margin = DEFAULT_MARGIN,
@@ -158,7 +160,9 @@ function midi_list()
       width = "15%",
       value = 1,
       items = range(1, 16, true),
-      notifier = select_midi_channel,
+      notifier = function(x)
+        select_midi_channel(x)
+      end,
       tooltip = "Which MIDI channel to send signals over."
     }
   }
